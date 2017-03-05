@@ -13,8 +13,8 @@ from glob import glob
 
 from qiita_client import ArtifactInfo
 
+
 def _files_checker(dir_path, to_check):
-    """"""
     path_builder = partial(join, dir_path)
     for fp, error_msg in to_check:
         fps = glob(path_builder(fp))
