@@ -19,7 +19,7 @@ classes = """
     Topic :: Software Development :: Libraries :: Application Frameworks
     Topic :: Software Development :: Libraries :: Python Modules
     Programming Language :: Python
-    Programming Language :: Python :: 2.7
+    Programming Language :: Python :: 3.5
     Programming Language :: Python :: Implementation :: CPython
     Operating System :: POSIX :: Linux
     Operating System :: MacOS :: MacOS X
@@ -42,6 +42,6 @@ setup(name='qtp_diversity',
       packages=['qtp_diversity'],
       scripts=glob('scripts/*'),
       extras_require={'test': ["nose >= 0.10.1", "pep8"]},
-      install_requires=['qiita_client', 'click >= 3.3'],
+      install_requires=['qiita_client', 'click >= 3.3', 'scikit-bio'],
       classifiers=classifiers
       )
