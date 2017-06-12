@@ -14,8 +14,11 @@ from shutil import rmtree
 from json import dumps
 
 from skbio.stats.distance import randdm
+from skbio import OrdinationResults
 from qiita_client import ArtifactInfo
 from qiita_client.testing import PluginTestCase
+import pandas as pd
+import numpy as np
 
 from qtp_diversity.validate import (
     _validate_distance_matrix, _validate_ordination_results, validate)
@@ -25,6 +28,12 @@ class ValidateTests(PluginTestCase):
     def setUp(self):
         self.out_dir = mkdtemp()
         self._clean_up_files = [self.out_dir]
+        self.metadata = {
+            '1.SKM4.640180': {'col': "doesn't really matters"},
+            '1.SKB8.640193': {'col': "doesn't really matters"},
+            '1.SKD8.640184': {'col': "doesn't really matters"},
+            '1.SKM9.640192': {'col': "doesn't really matters"},
+            '1.SKB7.640196': {'col': "doesn't really matters"}}
 
     def tearDown(self):
         for fp in self._clean_up_files:
@@ -39,6 +48,30 @@ class ValidateTests(PluginTestCase):
         fd, fp = mkstemp(suffix='.txt', dir=self.out_dir)
         close(fd)
         dm.write(fp)
+        return fp
+
+    def _create_ordination_results(self, sample_ids):
+        # These values have been shamelessly copied from the test in skbio
+        eigvals = pd.Series([0.0961330159181, 0.0409418140138], ['CA1', 'CA2'])
+        features = np.array([[0.408869425742, 0.0695518116298],
+                             [-0.1153860437, -0.299767683538],
+                             [-0.309967102571, 0.187391917117]])
+        samples = np.array([[-0.848956053187, 0.882764759014],
+                            [-0.220458650578, -1.34482000302],
+                            [1.66697179591, 0.470324389808]])
+        features_ids = ['Species1', 'Species2', 'Species3']
+
+        samples_df = pd.DataFrame(samples, index=sample_ids,
+                                  columns=['CA1', 'CA2'])
+        features_df = pd.DataFrame(features, index=features_ids,
+                                   columns=['CA1', 'CA2'])
+
+        ord_res = OrdinationResults(
+            'CA', 'Correspondance Analysis', eigvals=eigvals,
+            samples=samples_df, features=features_df)
+        fd, fp = mkstemp(suffix='.txt', dir=self.out_dir)
+        close(fd)
+        ord_res.write(fp)
         return fp
 
     def _create_job(self, a_type, files):
@@ -56,17 +89,10 @@ class ValidateTests(PluginTestCase):
         sample_ids = ['1.SKM4.640180', '1.SKB8.640193', '1.SKD8.640184',
                       '1.SKM9.640192', '1.SKB7.640196']
         dm_fp = self._create_distance_matrix(sample_ids)
-        # Create som sample metadata
-        metadata = {
-            '1.SKM4.640180': {'col': "doesn't really matters"},
-            '1.SKB8.640193': {'col': "doesn't really matters"},
-            '1.SKD8.640184': {'col': "doesn't really matters"},
-            '1.SKM9.640192': {'col': "doesn't really matters"},
-            '1.SKB7.640196': {'col': "doesn't really matters"}}
 
         # Test success
         obs_success, obs_ainfo, obs_error = _validate_distance_matrix(
-            {'plain_text': [dm_fp]}, metadata, self.out_dir)
+            {'plain_text': [dm_fp]}, self.metadata, self.out_dir)
         self.assertTrue(obs_success)
         exp_ainfo = [ArtifactInfo(None, "distance_matrix",
                                   [(dm_fp, 'plain_text')])]
@@ -78,15 +104,14 @@ class ValidateTests(PluginTestCase):
                       '1.SKM9.640192', 'NotASample']
         dm_fp = self._create_distance_matrix(sample_ids)
         obs_success, obs_ainfo, obs_error = _validate_distance_matrix(
-            {'plain_text': [dm_fp]}, metadata, self.out_dir)
+            {'plain_text': [dm_fp]}, self.metadata, self.out_dir)
         self.assertFalse(obs_success)
         self.assertIsNone(obs_ainfo)
         self.assertEqual(obs_error, "The distance matrix contain samples not "
                                     "present in the metadata")
 
     def test_validate_ordination_results(self):
-        # _validate_ordination_results()
-        pass
+        _validate_ordination_results()
 
     def test_validate(self):
         # validate()

@@ -8,7 +8,7 @@
 
 from json import loads
 
-from skbio.stats.distance import DistanceMatrix
+from skbio import (OrdinationResults, DistanceMatrix)
 from qiita_client import ArtifactInfo
 
 
@@ -33,7 +33,22 @@ def _validate_distance_matrix(files, metadata, out_dir):
 
 
 def _validate_ordination_results(files, metadata, out_dir):
-    return False, None, "Not implemented"
+    # Magix number [0] -> there is only one plain text file, which is the
+    # ordination results
+    ord_res_fp = files['plain_text'][0]
+    ord_res = OrdinationResults.read(ord_res_fp)
+
+    # Get the ids of the ordination results and the metadata
+    ord_res_ids = set(ord_res.samples.index)
+    metadata_ids = set(metadata)
+
+    if not metadata_ids.issuperset(ord_res_ids):
+        return (False, None, "The ordination results contain samples not "
+                             "present in the metadata")
+
+    filepaths = [(ord_res_fp, 'plain_text')]
+
+    return True, [ArtifactInfo(None, 'ordination_results', filepaths)], ""
 
 
 def validate(qclient, job_id, parameters, out_dir):
