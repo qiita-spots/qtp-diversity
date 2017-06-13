@@ -77,12 +77,13 @@ def validate(qclient, job_id, parameters, out_dir):
     files = loads(parameters['files'])
     a_type = parameters['artifact_type']
 
-    validators = {'distance_matrix': _validate_distance_matrix}
+    validators = {'distance_matrix': _validate_distance_matrix,
+                  'ordination_results': _validate_ordination_results}
 
     # Check if the validate is of a type that we support
     if a_type not in validators:
         return (False, None, "Unknown artifact type %s. Supported types: %s"
-                             % (a_type, ", ".join(validators)))
+                             % (a_type, ", ".join(sorted(validators))))
 
     # Get the metadata
     qclient.update_job_step(job_id, "Step 1: Collecting metadata")

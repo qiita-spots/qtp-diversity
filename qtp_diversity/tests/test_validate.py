@@ -72,15 +72,17 @@ class ValidateTests(PluginTestCase):
         ord_res.write(fp)
         return fp
 
-    def _create_job(self, a_type, files):
+    def _create_job(self, a_type, files, analysis):
         parameters = {'template': None,
                       'files': dumps(files),
                       'artifact_type': a_type,
-                      'analysis': 1}
+                      'analysis': analysis}
         data = {'command': dumps(['Diversity types', '0.1.0', 'Validate']),
                 'parameters': dumps(parameters),
                 'status': 'running'}
-        return self.qclient.post('/apitest/processing_job', data=data)['job']
+        job_id = self.qclient.post(
+            '/apitest/processing_job/', data=data)['job']
+        return job_id, parameters
 
     def test_validate_distance_matrix(self):
         # Create a distance matrix
@@ -135,8 +137,54 @@ class ValidateTests(PluginTestCase):
                                     "not present in the metadata")
 
     def test_validate(self):
-        # validate()
-        pass
+        # Test artifact type error
+        job_id, params = self._create_job(
+            'NotAType', {'plan_text': 'Will fail before checking this'}, 1)
+        obs_success, obs_ainfo, obs_error = validate(
+            self.qclient, job_id, params, self.out_dir)
+        self.assertFalse(obs_success)
+        self.assertIsNone(obs_ainfo)
+        self.assertEqual(
+            obs_error, "Unknown artifact type NotAType. Supported types: "
+                       "distance_matrix, ordination_results")
+
+        # Test missing metadata error - to be fair, I don't know how this error
+        # can happen in the live system, but better be safe than sorry
+        job_id, params = self._create_job(
+            'distance_matrix', {'plan_text': 'Will fail before checking this'},
+            None)
+        obs_success, obs_ainfo, obs_error = validate(
+            self.qclient, job_id, params, self.out_dir)
+        self.assertFalse(obs_success)
+        self.assertIsNone(obs_ainfo)
+        self.assertEqual(
+            obs_error, "Missing metadata information")
+
+        # Test distance matrix success
+        sample_ids = ['1.SKM4.640180', '1.SKB8.640193', '1.SKD8.640184',
+                      '1.SKM9.640192', '1.SKB7.640196']
+        dm_fp = self._create_distance_matrix(sample_ids)
+        job_id, params = self._create_job(
+            'distance_matrix', {'plain_text': [dm_fp]}, 1)
+        obs_success, obs_ainfo, obs_error = validate(
+            self.qclient, job_id, params, self.out_dir)
+        self.assertTrue(obs_success)
+        exp_ainfo = [ArtifactInfo(None, "distance_matrix",
+                                  [(dm_fp, 'plain_text')])]
+        self.assertEqual(obs_ainfo, exp_ainfo)
+        self.assertEqual(obs_error, "")
+
+        # Test ordination results success
+        ord_res_fp = self._create_ordination_results(sample_ids)
+        job_id, params = self._create_job(
+            'ordination_results', {'plain_text': [ord_res_fp]}, 1)
+        obs_success, obs_ainfo, obs_error = validate(
+            self.qclient, job_id, params, self.out_dir)
+        self.assertTrue(obs_success)
+        exp_ainfo = [ArtifactInfo(None, "ordination_results",
+                     [(ord_res_fp, 'plain_text')])]
+        self.assertEqual(obs_ainfo, exp_ainfo)
+        self.assertEqual(obs_error, "")
 
 if __name__ == '__main__':
     main()
