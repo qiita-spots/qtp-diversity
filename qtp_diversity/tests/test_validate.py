@@ -51,14 +51,12 @@ class ValidateTests(PluginTestCase):
         return fp
 
     def _create_ordination_results(self, sample_ids):
-        # These values have been shamelessly copied from the test in skbio
+        # These values have been shamelessly copied from the tests in skbio
         eigvals = pd.Series([0.0961330159181, 0.0409418140138], ['CA1', 'CA2'])
         features = np.array([[0.408869425742, 0.0695518116298],
                              [-0.1153860437, -0.299767683538],
                              [-0.309967102571, 0.187391917117]])
-        samples = np.array([[-0.848956053187, 0.882764759014],
-                            [-0.220458650578, -1.34482000302],
-                            [1.66697179591, 0.470324389808]])
+        samples = np.random.rand(len(sample_ids), 2)
         features_ids = ['Species1', 'Species2', 'Species3']
 
         samples_df = pd.DataFrame(samples, index=sample_ids,
@@ -111,7 +109,30 @@ class ValidateTests(PluginTestCase):
                                     "present in the metadata")
 
     def test_validate_ordination_results(self):
-        _validate_ordination_results()
+        # Create the ordination results
+        sample_ids = ['1.SKM4.640180', '1.SKB8.640193', '1.SKD8.640184',
+                      '1.SKM9.640192', '1.SKB7.640196']
+        ord_res_fp = self._create_ordination_results(sample_ids)
+
+        # Test success
+        obs_success, obs_ainfo, obs_error = _validate_ordination_results(
+            {'plain_text': [ord_res_fp]}, self.metadata, self.out_dir)
+        self.assertTrue(obs_success)
+        exp_ainfo = [ArtifactInfo(None, "ordination_results",
+                     [(ord_res_fp, 'plain_text')])]
+        self.assertEqual(obs_ainfo, exp_ainfo)
+        self.assertEqual(obs_error, "")
+
+        # Test failure
+        sample_ids = ['1.SKM4.640180', '1.SKB8.640193', '1.SKD8.640184',
+                      '1.SKM9.640192', 'NotASample']
+        ord_res_fp = self._create_ordination_results(sample_ids)
+        obs_success, obs_ainfo, obs_error = _validate_ordination_results(
+            {'plain_text': [ord_res_fp]}, self.metadata, self.out_dir)
+        self.assertFalse(obs_success)
+        self.assertIsNone(obs_ainfo)
+        self.assertEqual(obs_error, "The ordination results contain samples "
+                                    "not present in the metadata")
 
     def test_validate(self):
         # validate()

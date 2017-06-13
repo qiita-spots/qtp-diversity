@@ -33,7 +33,7 @@ def _validate_distance_matrix(files, metadata, out_dir):
 
 
 def _validate_ordination_results(files, metadata, out_dir):
-    # Magix number [0] -> there is only one plain text file, which is the
+    # Magic number [0] -> there is only one plain text file, which is the
     # ordination results
     ord_res_fp = files['plain_text'][0]
     ord_res = OrdinationResults.read(ord_res_fp)
