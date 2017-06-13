@@ -10,7 +10,7 @@
 
 import click
 
-from qtp_biom import plugin
+from qtp_diversity import plugin
 
 
 @click.command()
