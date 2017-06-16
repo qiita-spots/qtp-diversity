@@ -186,5 +186,6 @@ class ValidateTests(PluginTestCase):
         self.assertEqual(obs_ainfo, exp_ainfo)
         self.assertEqual(obs_error, "")
 
+
 if __name__ == '__main__':
     main()

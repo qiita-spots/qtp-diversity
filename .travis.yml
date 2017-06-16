@@ -36,7 +36,7 @@ before_script:
 script:
   - source activate env_name
   - sleep 5 # give enough time to the webserver to start
-  - nosetests --with-doctest --with-coverage -v
+  - nosetests --with-doctest --with-coverage -v --cover-package=qtp_diversity
   - flake8 qtp_diversity setup.py scripts
 addons:
   postgresql: "9.3"

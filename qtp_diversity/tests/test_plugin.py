@@ -14,5 +14,6 @@ from qiita_client.testing import PluginTestCase
 class PluginTests(PluginTestCase):
     pass
 
+
 if __name__ == '__main__':
     main()
