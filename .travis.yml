@@ -27,6 +27,7 @@ install:
   - travis_retry conda create --yes -n env_name python=$PYTHON_VERSION pip nose flake8 coverage
   - source activate env_name
   - pip install https://github.com/qiita-spots/qiita_client/archive/master.zip
+  - pip install emperor --pre
   - travis_retry pip install . --process-dependency-links
   - configure_diversity_types --env-script "source activate env_name" --server-cert $QIITA_SERVER_CERT
 before_script:
