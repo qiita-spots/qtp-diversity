@@ -15,13 +15,7 @@ from .summary import generate_html_summary
 artifact_types = [
     QiitaArtifactType('distance_matrix',
                       'Distance matrix holding pairwise distance between '
-                      'samples', False, False, [('directory', True)]),
-    QiitaArtifactType('rarefaction_curves',
-                      'Rarefaction curves', False, False,
-                      [('directory', True)]),
-    QiitaArtifactType('taxa_summary',
-                      'Taxa summary plots', False, False,
-                      [('directory', True)])]
+                      'samples', False, False, [('plain_text', True)])]
 
 # Initialize the plugin
 plugin = QiitaTypePlugin('Diversity types', '0.1.0',
