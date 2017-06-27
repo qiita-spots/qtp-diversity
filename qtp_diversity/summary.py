@@ -11,6 +11,7 @@ from urllib.parse import quote
 from base64 import b64encode
 from io import BytesIO
 from json import dumps
+from os import makedirs
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -70,14 +71,16 @@ def _generate_ordination_results_summary(files, metadata, out_dir):
     # ordination results
     ord_res = OrdinationResults.read(files['plain_text'][0])
     md_df = pd.DataFrame.from_dict(metadata, orient='index')
-    emp = Emperor(ord_res, md_df, remote=".")
+    emp = Emperor(ord_res, md_df, remote="emperor_support_files")
 
     html_summary_fp = join(out_dir, 'index.html')
+    esf_dp = join(out_dir, 'emperor_support_files')
+    makedirs(esf_dp)
     with open(html_summary_fp, 'w') as f:
         f.write(emp.make_emperor(standalone=True))
-        emp.copy_support_files(out_dir)
+        emp.copy_support_files(esf_dp)
 
-    return html_summary_fp, join(out_dir, 'emperor_support_files')
+    return html_summary_fp, esf_dp
 
 
 HTML_SUMMARIZERS = {
