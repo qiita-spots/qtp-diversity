@@ -9,7 +9,7 @@
 
 from unittest import main
 from tempfile import mkdtemp, mkstemp
-from os.path import exists, isdir
+from os.path import exists, isdir, join
 from os import remove, close
 from shutil import rmtree
 
@@ -47,17 +47,33 @@ class SummaryTests(PluginTestCase):
         fd, fp = mkstemp(suffix='.txt', dir=self.out_dir)
         close(fd)
         dm.write(fp)
-        obs = _generate_distance_matrix_summary(
+        obs_fp, obs_dp = _generate_distance_matrix_summary(
             {'plain_text': [fp]}, self.metadata, self.out_dir)
-        exp = []
-        self.assertEqual(obs, exp)
+        self.assertEqual(obs_fp, join(self.out_dir, 'index.html'))
+        self.assertIsNone(obs_dp)
+
+        self.assertTrue(exists(obs_fp))
+        with open(obs_fp) as f:
+            obs = f.read()
+
+        self.assertRegex(obs, EXP_HTML_REGEXP)
 
     def test_generate_ordination_results_summary(self):
-        _generate_ordination_results_summary()
+        pass
+        # _generate_ordination_results_summary()
 
     def test_generate_html_summary(self):
-        generate_html_summary()
+        pass
+        # generate_html_summary()
 
+
+EXP_HTML_REGEXP = """<b>Number of samples:</b> 3</br>
+<b>Minimum distance:</b> 0.2500<br/>
+<b>Maximum distance:</b> 0.8500<br/>
+<b>Mean distance:</b> 0.5333<br/>
+<b>Median distance:</b> 0.5000<br/>
+<br/><hr/><br/>
+<img src = "data:image/png;base64,.*"/>"""
 
 if __name__ == '__main__':
     main()

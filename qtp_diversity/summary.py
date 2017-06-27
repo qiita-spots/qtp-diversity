@@ -10,11 +10,14 @@ from os.path import join
 from urllib.parse import quote
 from base64 import b64encode
 from io import BytesIO
+from json import dumps
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from emperor import Emperor
-from skbio import OrdinationResults, DistanceMatrix
+from skbio import OrdinationResults, DistanceMatrix, TreeNode
+from scipy.cluster.hierarchy import linkage
 
 
 DM_HTML = """<b>Number of samples:</b> %d</br>
@@ -33,15 +36,33 @@ def _generate_distance_matrix_summary(files, metadata, out_dir):
     data = dm.condensed_form()
 
     # Generate a heatmap with the distance matrix
+    # The sorting in the heatmap is going to be based in hierarchical
+    # clustering.
+    tree = TreeNode.from_linkage_matrix(
+        linkage(data, method='average'), id_list=dm.ids)
+    ids = list(dm.ids)
+    order = [ids.index(n.name) for n in tree.tips()]
+
+    # Plotting code adapted from skbio's DistanceMatrix.plot()
+    fig, ax = plt.subplots()
+    heatmap = ax.pcolormesh(dm.data[order][:, order])
+    fig.colorbar(heatmap)
+    ax.invert_yaxis()
+    ax.set_title('Distance Matrix - hierarchical clustering')
+    ax.tick_params(axis='both', which='both', bottom='off', top='off',
+                   left='off', right='off', labelbottom='off', labelleft='off')
+
     sc_plot = BytesIO()
-    fig = dm.plot()
     fig.savefig(sc_plot, format='png')
     sc_plot.seek(0)
     uri = 'data:image/png;base64,' + quote(b64encode(sc_plot.getbuffer()))
 
-    with open(join(out_dir, 'index.html'), 'w') as f:
+    html_summary_fp = join(out_dir, 'index.html')
+    with open(html_summary_fp, 'w') as f:
         f.write(DM_HTML % (dm.shape[0], data.min(), data.max(),
                            data.mean(), np.median(data), uri))
+
+    return html_summary_fp, None
 
 
 def _generate_ordination_results_summary(files, metadata, out_dir):
@@ -51,9 +72,12 @@ def _generate_ordination_results_summary(files, metadata, out_dir):
     md_df = pd.DataFrame.from_dict(metadata, orient='index')
     emp = Emperor(ord_res, md_df, remote=".")
 
-    with open(join(out_dir, 'index.html'), 'w') as f:
+    html_summary_fp = join(out_dir, 'index.html')
+    with open(html_summary_fp, 'w') as f:
         f.write(emp.make_emperor(standalone=True))
         emp.copy_support_files(out_dir)
+
+    return html_summary_fp, join(out_dir, 'emperor_support_files')
 
 
 HTML_SUMMARIZERS = {
@@ -92,6 +116,20 @@ def generate_html_summary(qclient, job_id, parameters, out_dir):
         return (False, None, "Unknown artifact type %s. Supported types: %s"
                              % (atype, ", ".join(sorted(HTML_SUMMARIZERS))))
 
-    summary_fp = HTML_SUMMARIZERS[atype](artifact_info['files'], metadata,
-                                         out_dir)
-    return True, None, ""
+    html_fp, html_dir = HTML_SUMMARIZERS[atype](artifact_info['files'],
+                                                metadata, out_dir)
+
+    if html_dir:
+        patch_val = dumps({'hmtl': html_fp, 'dir': html_dir})
+    else:
+        patch_val = html_fp
+
+    success = True
+    error_msg = ""
+    try:
+        qclient.patch(qclient_url, 'add', '/html_summary/', value=patch_val)
+    except Exception as e:
+        success = False
+        error_msg = str(e)
+
+    return success, None, error_msg
