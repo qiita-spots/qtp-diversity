@@ -12,6 +12,7 @@ from tempfile import mkdtemp, mkstemp
 from os.path import exists, isdir, join
 from os import remove, close
 from shutil import rmtree
+from json import dumps
 
 import pandas as pd
 import numpy as np
@@ -42,25 +43,16 @@ class SummaryTests(PluginTestCase):
                 else:
                     remove(fp)
 
-    def test_generate_distance_matrix_summary(self):
+    def _create_distance_matrix(self):
         dm = DistanceMatrix([[0.0, 0.850, 0.250],
                              [0.850, 0.0, 0.500],
                              [0.250, 0.500, 0.0]])
         fd, fp = mkstemp(suffix='.txt', dir=self.out_dir)
         close(fd)
         dm.write(fp)
-        obs_fp, obs_dp = _generate_distance_matrix_summary(
-            {'plain_text': [fp]}, self.metadata, self.out_dir)
-        self.assertEqual(obs_fp, join(self.out_dir, 'index.html'))
-        self.assertIsNone(obs_dp)
+        return fp
 
-        self.assertTrue(exists(obs_fp))
-        with open(obs_fp) as f:
-            obs = f.read()
-
-        self.assertRegex(obs, EXP_HTML_REGEXP)
-
-    def test_generate_ordination_results_summary(self):
+    def _create_ordination_results(self):
         eigvals = [0.51236726, 0.30071909, 0.26791207, 0.20898868]
         proportion_explained = [0.2675738328, 0.157044696, 0.1399118638,
                                 0.1091402725]
@@ -83,7 +75,23 @@ class SummaryTests(PluginTestCase):
         fd, fp = mkstemp(suffix='.txt', dir=self.out_dir)
         close(fd)
         ord_res.write(fp)
+        return fp
 
+    def test_generate_distance_matrix_summary(self):
+        fp = self._create_distance_matrix()
+        obs_fp, obs_dp = _generate_distance_matrix_summary(
+            {'plain_text': [fp]}, self.metadata, self.out_dir)
+        self.assertEqual(obs_fp, join(self.out_dir, 'index.html'))
+        self.assertIsNone(obs_dp)
+
+        self.assertTrue(exists(obs_fp))
+        with open(obs_fp) as f:
+            obs = f.read()
+
+        self.assertRegex(obs, EXP_HTML_REGEXP)
+
+    def test_generate_ordination_results_summary(self):
+        fp = self._create_ordination_results()
         obs_fp, obs_dp = _generate_ordination_results_summary(
             {'plain_text': [fp]}, self.metadata, self.out_dir)
         self.assertEqual(obs_fp, join(self.out_dir, 'index.html'))
@@ -96,9 +104,74 @@ class SummaryTests(PluginTestCase):
 
         self.assertIn('<title>Emperor</title>', obs)
 
+    def _create_job(self, a_type, files):
+        data = {'filepaths': dumps(files), 'type': a_type,
+                'name': "A name", 'analysis': 1, 'data_type': '16S'}
+        aid = self.qclient.post('/apitest/artifact/', data=data)['artifact']
+        parameters = {'input_data': aid}
+        data = {'command': dumps(['Diversity types', '0.1.0',
+                                  'Generate HTML summary']),
+                'parameters': dumps(parameters),
+                'status': 'running'}
+        job_id = self.qclient.post(
+            '/apitest/processing_job/', data=data)['job']
+        return job_id, parameters
+
     def test_generate_html_summary(self):
-        pass
-        # generate_html_summary()
+        # Test artifact type error
+        fd, fp = mkstemp(suffix='.txt', dir=self.out_dir)
+        close(fd)
+        with open(fp, 'w') as f:
+            f.write('\n')
+
+        job_id, params = self._create_job('BIOM', [(fp, 'plain_text')])
+        obs_success, obs_ainfo, obs_error = generate_html_summary(
+            self.qclient, job_id, params, self.out_dir)
+        self.assertEqual(
+            obs_error, "Unknown artifact type BIOM. Supported types: "
+                       "distance_matrix, ordination_results")
+        self.assertFalse(obs_success)
+        self.assertIsNone(obs_ainfo)
+
+        # Test distance matrix success
+        fp = self._create_distance_matrix()
+        job_id, params = self._create_job(
+            'distance_matrix', [(fp, 'plain_text')])
+        a_files = self.qclient.get(
+            "/qiita_db/artifacts/%s/" % params['input_data'])['files']
+        self.assertNotIn('html_summary', a_files)
+        self.assertNotIn('html_summary_dir', a_files)
+        obs_success, obs_ainfo, obs_error = generate_html_summary(
+            self.qclient, job_id, params, self.out_dir)
+        self.assertEqual(obs_error, "")
+        self.assertTrue(obs_success)
+        self.assertIsNone(obs_ainfo)
+        a_files = self.qclient.get(
+            "/qiita_db/artifacts/%s/" % params['input_data'])['files']
+        self.assertIn('html_summary', a_files)
+        self.assertNotIn('html_summary_dir', a_files)
+        for key, val in a_files.items():
+            self._clean_up_files.extend(val)
+
+        # test ordination results success
+        fp = self._create_ordination_results()
+        job_id, params = self._create_job(
+            'ordination_results', [(fp, 'plain_text')])
+        a_files = self.qclient.get(
+            "/qiita_db/artifacts/%s/" % params['input_data'])['files']
+        self.assertNotIn('html_summary', a_files)
+        self.assertNotIn('html_summary_dir', a_files)
+        obs_success, obs_ainfo, obs_error = generate_html_summary(
+            self.qclient, job_id, params, self.out_dir)
+        self.assertEqual(obs_error, "")
+        self.assertTrue(obs_success)
+        self.assertIsNone(obs_ainfo)
+        a_files = self.qclient.get(
+            "/qiita_db/artifacts/%s/" % params['input_data'])['files']
+        self.assertIn('html_summary', a_files)
+        self.assertIn('html_summary_dir', a_files)
+        for key, val in a_files.items():
+            self._clean_up_files.extend(val)
 
 
 EXP_HTML_REGEXP = """<b>Number of samples:</b> 3</br>

@@ -114,16 +114,29 @@ def generate_html_summary(qclient, job_id, parameters, out_dir):
     qclient_url = "/qiita_db/artifacts/%s/" % artifact_id
     artifact_info = qclient.get(qclient_url)
     atype = artifact_info['type']
+    preps = artifact_info['prep_information']
+    analysis_id = artifact_info['analysis']
 
     if atype not in HTML_SUMMARIZERS:
         return (False, None, "Unknown artifact type %s. Supported types: %s"
                              % (atype, ", ".join(sorted(HTML_SUMMARIZERS))))
 
+    # Get the metadata
+    if preps:
+        # Magic number 0 -> It returns a list but only 1 prep is
+        # currently supported
+        metadata = qclient.get("/qiita_db/prep_template/%s/data/" % preps[0])
+        metadata = metadata['data']
+    elif analysis_id is not None:
+        metadata = qclient.get("/qiita_db/analysis/%s/metadata/" % analysis_id)
+    else:
+        return (False, None, "Missing metadata information")
+
     html_fp, html_dir = HTML_SUMMARIZERS[atype](artifact_info['files'],
                                                 metadata, out_dir)
 
     if html_dir:
-        patch_val = dumps({'hmtl': html_fp, 'dir': html_dir})
+        patch_val = dumps({'html': html_fp, 'dir': html_dir})
     else:
         patch_val = html_fp
 
