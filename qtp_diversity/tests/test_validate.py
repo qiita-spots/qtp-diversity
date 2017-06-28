@@ -8,7 +8,7 @@
 
 from unittest import main
 from tempfile import mkdtemp, mkstemp
-from os.path import exists, isdir
+from os.path import exists, isdir, join
 from os import remove, close
 from shutil import rmtree
 from json import dumps
@@ -51,22 +51,23 @@ class ValidateTests(PluginTestCase):
         return fp
 
     def _create_ordination_results(self, sample_ids):
-        # These values have been shamelessly copied from the tests in skbio
-        eigvals = pd.Series([0.0961330159181, 0.0409418140138], ['CA1', 'CA2'])
-        features = np.array([[0.408869425742, 0.0695518116298],
-                             [-0.1153860437, -0.299767683538],
-                             [-0.309967102571, 0.187391917117]])
-        samples = np.random.rand(len(sample_ids), 2)
-        features_ids = ['Species1', 'Species2', 'Species3']
-
-        samples_df = pd.DataFrame(samples, index=sample_ids,
-                                  columns=['CA1', 'CA2'])
-        features_df = pd.DataFrame(features, index=features_ids,
-                                   columns=['CA1', 'CA2'])
-
+        eigvals = [0.51236726, 0.30071909, 0.26791207, 0.20898868]
+        proportion_explained = [0.2675738328, 0.157044696, 0.1399118638,
+                                0.1091402725]
+        axis_labels = ['PC1', 'PC2', 'PC3', 'PC4']
+        samples = [[-2.584, 1.739, 3.828, -1.944],
+                   [-2.710, -1.859, -8.648, 1.180],
+                   [2.350, 9.625, -3.457, -3.208],
+                   [2.614, -1.114, 1.476, 2.908],
+                   [2.850, -1.925, 6.232, 1.381]]
         ord_res = OrdinationResults(
-            'CA', 'Correspondance Analysis', eigvals=eigvals,
-            samples=samples_df, features=features_df)
+            short_method_name='PCoA',
+            long_method_name='Principal Coordinate Analysis',
+            eigvals=pd.Series(eigvals, index=axis_labels),
+            samples=pd.DataFrame(np.asarray(samples), index=sample_ids,
+                                 columns=axis_labels),
+            proportion_explained=pd.Series(proportion_explained,
+                                           index=axis_labels))
         fd, fp = mkstemp(suffix='.txt', dir=self.out_dir)
         close(fd)
         ord_res.write(fp)
@@ -169,8 +170,10 @@ class ValidateTests(PluginTestCase):
         obs_success, obs_ainfo, obs_error = validate(
             self.qclient, job_id, params, self.out_dir)
         self.assertTrue(obs_success)
+        html_fp = join(self.out_dir, 'index.html')
         exp_ainfo = [ArtifactInfo(None, "distance_matrix",
-                                  [(dm_fp, 'plain_text')])]
+                                  [(dm_fp, 'plain_text'),
+                                   (html_fp, 'html_summary')])]
         self.assertEqual(obs_ainfo, exp_ainfo)
         self.assertEqual(obs_error, "")
 
@@ -181,8 +184,12 @@ class ValidateTests(PluginTestCase):
         obs_success, obs_ainfo, obs_error = validate(
             self.qclient, job_id, params, self.out_dir)
         self.assertTrue(obs_success)
+        html_fp = join(self.out_dir, 'index.html')
+        esf_fp = join(self.out_dir, 'emperor_support_files')
         exp_ainfo = [ArtifactInfo(None, "ordination_results",
-                     [(ord_res_fp, 'plain_text')])]
+                     [(ord_res_fp, 'plain_text'),
+                      (html_fp, 'html_summary'),
+                      (esf_fp, 'html_summary_dir')])]
         self.assertEqual(obs_ainfo, exp_ainfo)
         self.assertEqual(obs_error, "")
 

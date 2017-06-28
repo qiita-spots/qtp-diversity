@@ -11,6 +11,8 @@ from json import loads
 from skbio import (OrdinationResults, DistanceMatrix)
 from qiita_client import ArtifactInfo
 
+from qtp_diversity.summary import HTML_SUMMARIZERS
+
 
 def _validate_distance_matrix(files, metadata, out_dir):
     """Validates a distance matrix artifact"""
@@ -96,4 +98,14 @@ def validate(qclient, job_id, parameters, out_dir):
         return (False, None, "Missing metadata information")
 
     # Validate the specific type
-    return validators[a_type](files, metadata, out_dir)
+    success, ainfo, error_msg = validators[a_type](files, metadata, out_dir)
+
+    if success:
+        # Generate the summary in the validator to save GUI clicks
+        html_fp, html_dir = HTML_SUMMARIZERS[a_type](files, metadata, out_dir)
+        # Magic number 0, there is only 1 ArtifactInfo on the list
+        ainfo[0].files.append((html_fp, 'html_summary'))
+        if html_dir is not None:
+            ainfo[0].files.append((html_dir, 'html_summary_dir'))
+
+    return success, ainfo, error_msg
