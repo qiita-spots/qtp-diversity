@@ -43,6 +43,6 @@ setup(name='qtp_diversity',
       scripts=glob('scripts/*'),
       extras_require={'test': ["nose >= 0.10.1", "pep8"]},
       install_requires=['qiita_client', 'click >= 3.3', 'scikit-bio',
-                        'pandas', 'numpy'],
+                        'pandas', 'numpy', 'emperor'],
       classifiers=classifiers
       )
