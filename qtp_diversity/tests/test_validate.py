@@ -20,6 +20,7 @@ from qiita_client.testing import PluginTestCase
 import pandas as pd
 import numpy as np
 
+from qtp_diversity import plugin
 from qtp_diversity.validate import (
     _validate_distance_matrix, _validate_ordination_results, validate)
 
@@ -34,6 +35,8 @@ class ValidateTests(PluginTestCase):
             '1.SKD8.640184': {'col': "doesn't really matters"},
             '1.SKM9.640192': {'col': "doesn't really matters"},
             '1.SKB7.640196': {'col': "doesn't really matters"}}
+
+        plugin('https://localhost:21174', 'register', 'ignored')
 
     def tearDown(self):
         for fp in self._clean_up_files:

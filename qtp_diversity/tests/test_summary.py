@@ -19,6 +19,7 @@ import numpy as np
 from qiita_client.testing import PluginTestCase
 from skbio import DistanceMatrix, OrdinationResults
 
+from qtp_diversity import plugin
 from qtp_diversity.summary import (
     _generate_distance_matrix_summary, _generate_ordination_results_summary,
     generate_html_summary)
@@ -34,6 +35,8 @@ class SummaryTests(PluginTestCase):
             '1.SKD8.640184': {'col': "group2"},
             '1.SKM9.640192': {'col': "group2"},
             '1.SKB7.640196': {'col': "group2"}}
+
+        plugin('https://localhost:21174', 'register', 'ignored')
 
     def tearDown(self):
         for fp in self._clean_up_files:
