@@ -41,6 +41,7 @@ script:
   # Commenting out the line with coverage cause at this time it is failing
   # We will address later
   # - nosetests --with-doctest --with-coverage -v --cover-package=qtp_diversity
+  - start_diversity_types "https://localhost:21174" register ignored
   - nosetests --with-doctest -v
   - flake8 qtp_diversity setup.py scripts
 addons:
