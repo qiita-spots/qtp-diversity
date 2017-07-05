@@ -22,7 +22,8 @@ import numpy as np
 
 from qtp_diversity import plugin
 from qtp_diversity.validate import (
-    _validate_distance_matrix, _validate_ordination_results, validate)
+    _validate_distance_matrix, _validate_ordination_results,
+    _validate_alpha_vector, validate)
 
 
 class ValidateTests(PluginTestCase):
@@ -74,6 +75,16 @@ class ValidateTests(PluginTestCase):
         fd, fp = mkstemp(suffix='.txt', dir=self.out_dir)
         close(fd)
         ord_res.write(fp)
+        return fp
+
+    def _create_alpha_vector(self, sample_ids):
+        fd, fp = mkstemp(suffix='.txt', dir=self.out_dir)
+        close(fd)
+        with open(fp, 'w') as f:
+            f.write("\tobserved_otus\n")
+            for s_id in sample_ids:
+                f.write("%s\t%d\n" % (s_id, np.random.randint(1, 200)))
+
         return fp
 
     def _create_job(self, a_type, files, analysis):
@@ -140,6 +151,43 @@ class ValidateTests(PluginTestCase):
         self.assertEqual(obs_error, "The ordination results contain samples "
                                     "not present in the metadata")
 
+    def test_validate_alpha_vector(self):
+        # Create the alpha vector
+        sample_ids = ['1.SKM4.640180', '1.SKB8.640193', '1.SKD8.640184',
+                      '1.SKM9.640192', '1.SKB7.640196']
+        alpha_vector_fp = self._create_alpha_vector(sample_ids)
+
+        # Test success
+        obs_success, obs_ainfo, obs_error = _validate_alpha_vector(
+            {'plain_text': [alpha_vector_fp]}, self.metadata, self.out_dir)
+        self.assertEqual(obs_error, "")
+        self.assertTrue(obs_success)
+        exp_ainfo = [ArtifactInfo(None, "alpha_vector",
+                     [(alpha_vector_fp, 'plain_text')])]
+        self.assertEqual(obs_ainfo, exp_ainfo)
+
+        # Test failure wrong ids
+        sample_ids = ['1.SKM4.640180', '1.SKB8.640193', '1.SKD8.640184',
+                      '1.SKM9.640192', 'NotASample']
+        alpha_vector_fp = self._create_alpha_vector(sample_ids)
+        obs_success, obs_ainfo, obs_error = _validate_alpha_vector(
+            {'plain_text': [alpha_vector_fp]}, self.metadata, self.out_dir)
+        self.assertEqual(obs_error, "The alpha vector contains samples not "
+                                    "present in the metadata")
+        self.assertFalse(obs_success)
+        self.assertIsNone(obs_ainfo)
+
+        # Test failure wrong format
+        fd, alpha_vector_fp = mkstemp(suffix='.txt', dir=self.out_dir)
+        close(fd)
+        with open(alpha_vector_fp, 'w') as f:
+            f.write("\tobserved_otus\nsample 1\n")
+        obs_success, obs_ainfo, obs_error = _validate_alpha_vector(
+            {'plain_text': [alpha_vector_fp]}, self.metadata, self.out_dir)
+        self.assertEqual(obs_error, "The alpha vector format is incorrect")
+        self.assertFalse(obs_success)
+        self.assertIsNone(obs_ainfo)
+
     def test_validate(self):
         # Test artifact type error
         job_id, params = self._create_job(
@@ -150,7 +198,7 @@ class ValidateTests(PluginTestCase):
         self.assertIsNone(obs_ainfo)
         self.assertEqual(
             obs_error, "Unknown artifact type NotAType. Supported types: "
-                       "distance_matrix, ordination_results")
+                       "alpha_vector, distance_matrix, ordination_results")
 
         # Test missing metadata error - to be fair, I don't know how this error
         # can happen in the live system, but better be safe than sorry
@@ -193,6 +241,22 @@ class ValidateTests(PluginTestCase):
                      [(ord_res_fp, 'plain_text'),
                       (html_fp, 'html_summary'),
                       (esf_fp, 'html_summary_dir')])]
+        self.assertEqual(obs_ainfo, exp_ainfo)
+        self.assertEqual(obs_error, "")
+
+        # Test alpha vector success
+        alpha_vector_fp = self._create_alpha_vector(sample_ids)
+        job_id, params = self._create_job(
+            'alpha_vector', {'plain_text': [alpha_vector_fp]}, 1)
+        obs_success, obs_ainfo, obs_error = validate(
+            self.qclient, job_id, params, self.out_dir)
+        self.assertTrue(obs_success)
+        html_fp = join(self.out_dir, 'index.html')
+        sf_fp = join(self.out_dir, 'support_files')
+        exp_ainfo = [ArtifactInfo(None, "alpha_vector",
+                     [(alpha_vector_fp, 'plain_text'),
+                      (html_fp, 'html_summary'),
+                      (sf_fp, 'html_summary_dir')])]
         self.assertEqual(obs_ainfo, exp_ainfo)
         self.assertEqual(obs_error, "")
 

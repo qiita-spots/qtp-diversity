@@ -6,7 +6,7 @@
 # The full license is in the file LICENSE, distributed with this software.
 # -----------------------------------------------------------------------------
 
-from os.path import join
+from os.path import join, basename
 from urllib.parse import quote
 from base64 import b64encode
 from io import BytesIO
@@ -19,6 +19,8 @@ import pandas as pd
 from emperor import Emperor
 from skbio import OrdinationResults, DistanceMatrix, TreeNode
 from scipy.cluster.hierarchy import linkage
+from qiita_client.util import system_call
+from qiime2 import Visualization
 
 
 DM_HTML = """<b>Number of samples:</b> %d</br>
@@ -28,6 +30,14 @@ DM_HTML = """<b>Number of samples:</b> %d</br>
 <b>Median distance:</b> %.4f<br/>
 <br/><hr/><br/>
 <img src = "%s"/>"""
+
+Q2_INDEX = """<!DOCTYPE html>
+<html>
+  <body>
+    <iframe src="./support_files/%s" width="100%%" height="850" frameborder=0>
+    </iframe>
+  </body>
+</html>"""
 
 
 def _generate_distance_matrix_summary(files, metadata, out_dir):
@@ -83,9 +93,54 @@ def _generate_ordination_results_summary(files, metadata, out_dir):
     return html_summary_fp, esf_dp
 
 
+def _generate_alpha_vector_summary(files, metadata, out_dir):
+    # Magic number [0] -> there is only one plain text file and it is the
+    # alpha vector
+    alpha_vector_fp = files['plain_text'][0]
+    alpha_qza = join(out_dir, 'alpha_vectors.qza')
+    alpha_qzv = join(out_dir, 'alpha_vectors.qzv')
+    metadata_fp = join(out_dir, 'sample-metadata.tsv')
+
+    # Get the SampleData[AlphaDiversity] qiime2 artifact
+    cmd = ('qiime tools import --input-path %s --output-path %s '
+           '--type "SampleData[AlphaDiversity]"'
+           % (alpha_vector_fp, alpha_qza))
+    std_out, std_err, return_value = system_call(cmd)
+    if return_value != 0:
+        error_msg = "Error converting the alpha vectors file to Q2 artifact"
+        return False, None, error_msg
+
+    # Generate the metadata file
+    metadata = pd.DataFrame.from_dict(metadata, orient='index')
+    metadata.to_csv(metadata_fp, sep='\t')
+
+    # Execute alpha group significance
+    cmd = ('qiime diversity alpha-group-significance --i-alpha-diversity %s '
+           '--m-metadata-file %s --o-visualization %s'
+           % (alpha_qza, metadata_fp, alpha_qzv))
+    std_out, std_err, return_value = system_call(cmd)
+    if return_value != 0:
+        error_msg = "Error executing alpha-group-significance for the summary"
+        return False, None, error_msg
+
+    # Extract the Q2 visualization to use it as html_summary
+    q2vis = Visualization.load(alpha_qzv)
+    html_dir = join(out_dir, 'support_files')
+    html_fp = join(out_dir, 'index.html')
+
+    q2vis.export_data(html_dir)
+    index_paths = q2vis.get_index_paths()
+    index_name = basename(index_paths['html'])
+    with open(html_fp, 'w') as f:
+        f.write(Q2_INDEX % index_name)
+
+    return html_fp, html_dir
+
+
 HTML_SUMMARIZERS = {
     'distance_matrix': _generate_distance_matrix_summary,
-    'ordination_results': _generate_ordination_results_summary
+    'ordination_results': _generate_ordination_results_summary,
+    'alpha_vector': _generate_alpha_vector_summary
 }
 
 

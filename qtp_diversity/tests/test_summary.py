@@ -22,7 +22,7 @@ from skbio import DistanceMatrix, OrdinationResults
 from qtp_diversity import plugin
 from qtp_diversity.summary import (
     _generate_distance_matrix_summary, _generate_ordination_results_summary,
-    generate_html_summary)
+    _generate_alpha_vector_summary, generate_html_summary)
 
 
 class SummaryTests(PluginTestCase):
@@ -80,6 +80,18 @@ class SummaryTests(PluginTestCase):
         ord_res.write(fp)
         return fp
 
+    def _create_alpha_vector(self):
+        sample_ids = ['1.SKM4.640180', '1.SKB8.640193', '1.SKD8.640184',
+                      '1.SKM9.640192', '1.SKB7.640196']
+        fd, fp = mkstemp(suffix='.txt', dir=self.out_dir)
+        close(fd)
+        with open(fp, 'w') as f:
+            f.write("\tobserved_otus\n")
+            for s_id in sample_ids:
+                f.write("%s\t%d\n" % (s_id, np.random.randint(1, 200)))
+
+        return fp
+
     def test_generate_distance_matrix_summary(self):
         fp = self._create_distance_matrix()
         obs_fp, obs_dp = _generate_distance_matrix_summary(
@@ -107,6 +119,20 @@ class SummaryTests(PluginTestCase):
 
         self.assertIn('<title>Emperor</title>', obs)
 
+    def test_generate_alpha_vector_summary(self):
+        fp = self._create_alpha_vector()
+        obs_fp, obs_dp = _generate_alpha_vector_summary(
+            {'plain_text': [fp]}, self.metadata, self.out_dir)
+        self.assertEqual(obs_fp, join(self.out_dir, 'index.html'))
+        self.assertEqual(obs_dp, join(self.out_dir, 'support_files'))
+        self.assertTrue(exists(obs_fp))
+        self.assertTrue(exists(obs_dp))
+
+        with open(obs_fp) as f:
+            obs = f.read()
+
+        self.assertIn('<iframe src="./support_files/', obs)
+
     def _create_job(self, a_type, files):
         data = {'filepaths': dumps(files), 'type': a_type,
                 'name': "A name", 'analysis': 1, 'data_type': '16S'}
@@ -132,7 +158,7 @@ class SummaryTests(PluginTestCase):
             self.qclient, job_id, params, self.out_dir)
         self.assertEqual(
             obs_error, "Unknown artifact type BIOM. Supported types: "
-                       "distance_matrix, ordination_results")
+                       "alpha_vector, distance_matrix, ordination_results")
         self.assertFalse(obs_success)
         self.assertIsNone(obs_ainfo)
 
@@ -160,6 +186,25 @@ class SummaryTests(PluginTestCase):
         fp = self._create_ordination_results()
         job_id, params = self._create_job(
             'ordination_results', [(fp, 'plain_text')])
+        a_files = self.qclient.get(
+            "/qiita_db/artifacts/%s/" % params['input_data'])['files']
+        self.assertNotIn('html_summary', a_files)
+        self.assertNotIn('html_summary_dir', a_files)
+        obs_success, obs_ainfo, obs_error = generate_html_summary(
+            self.qclient, job_id, params, self.out_dir)
+        self.assertEqual(obs_error, "")
+        self.assertTrue(obs_success)
+        self.assertIsNone(obs_ainfo)
+        a_files = self.qclient.get(
+            "/qiita_db/artifacts/%s/" % params['input_data'])['files']
+        self.assertIn('html_summary', a_files)
+        self.assertIn('html_summary_dir', a_files)
+        for key, val in a_files.items():
+            self._clean_up_files.extend(val)
+
+        # Test alpha vector success
+        fp = self._create_alpha_vector()
+        job_id, params = self._create_job('alpha_vector', [(fp, 'plain_text')])
         a_files = self.qclient.get(
             "/qiita_db/artifacts/%s/" % params['input_data'])['files']
         self.assertNotIn('html_summary', a_files)
