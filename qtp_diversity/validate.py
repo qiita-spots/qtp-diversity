@@ -72,7 +72,7 @@ def _validate_alpha_vector(files, metadata, out_dir):
     metadata_ids = set(metadata)
     alpha_ids = set(alpha_ids)
 
-    if not metadata_ids.issubset(alpha_ids):
+    if not metadata_ids.issuperset(alpha_ids):
         return (False, None, "The alpha vector contains samples not present "
                              "in the metadata")
 
