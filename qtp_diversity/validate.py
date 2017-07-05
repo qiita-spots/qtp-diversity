@@ -53,6 +53,34 @@ def _validate_ordination_results(files, metadata, out_dir):
     return True, [ArtifactInfo(None, 'ordination_results', filepaths)], ""
 
 
+def _validate_alpha_vector(files, metadata, out_dir):
+    # Magic number [0] -> there is only one plain text file, which is the
+    # ordination results
+    alpha_vector = files['plain_text'][0]
+
+    # Parse the sample ids from the alphe_vector file
+    alpha_ids = []
+    with open(alpha_vector) as f:
+        # Ignore the header line
+        f.readline()
+        for line in f:
+            vals = line.strip().split('\t')
+            if len(vals) != 2:
+                return (False, None, "The alpha vector format is incorrect")
+            alpha_ids.append(vals[0])
+
+    metadata_ids = set(metadata)
+    alpha_ids = set(alpha_ids)
+
+    if not metadata_ids.issuperset(alpha_ids):
+        return (False, None, "The alpha vector contains samples not present "
+                             "in the metadata")
+
+    filepaths = [(alpha_vector, 'plain_text')]
+
+    return True, [ArtifactInfo(None, 'alpha_vector', filepaths)], ""
+
+
 def validate(qclient, job_id, parameters, out_dir):
     """Validates and fix a new artifact
 
@@ -80,7 +108,8 @@ def validate(qclient, job_id, parameters, out_dir):
     a_type = parameters['artifact_type']
 
     validators = {'distance_matrix': _validate_distance_matrix,
-                  'ordination_results': _validate_ordination_results}
+                  'ordination_results': _validate_ordination_results,
+                  'alpha_vector': _validate_alpha_vector}
 
     # Check if the validate is of a type that we support
     if a_type not in validators:

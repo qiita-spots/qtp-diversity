@@ -18,7 +18,9 @@ artifact_types = [
                       'samples', False, False, [('plain_text', True)]),
     QiitaArtifactType('ordination_results',
                       'Ordination results', False, False,
-                      [('plain_text', True)])]
+                      [('plain_text', True)]),
+    QiitaArtifactType('alpha_vector', 'Alpha Diversity per sample results',
+                      False, False, [('plain_text', True)])]
 
 # Initialize the plugin
 plugin = QiitaTypePlugin('Diversity types', '0.1.0',
