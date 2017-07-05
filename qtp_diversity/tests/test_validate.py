@@ -154,7 +154,7 @@ class ValidateTests(PluginTestCase):
     def test_validate_alpha_vector(self):
         # Create the alpha vector
         sample_ids = ['1.SKM4.640180', '1.SKB8.640193', '1.SKD8.640184',
-                      '1.SKM9.640192', '1.SKB7.640196']
+                      '1.SKM9.640192']
         alpha_vector_fp = self._create_alpha_vector(sample_ids)
 
         # Test success
@@ -168,7 +168,7 @@ class ValidateTests(PluginTestCase):
 
         # Test failure wrong ids
         sample_ids = ['1.SKM4.640180', '1.SKB8.640193', '1.SKD8.640184',
-                      '1.SKM9.640192', 'NotASample']
+                      'NotASample']
         alpha_vector_fp = self._create_alpha_vector(sample_ids)
         obs_success, obs_ainfo, obs_error = _validate_alpha_vector(
             {'plain_text': [alpha_vector_fp]}, self.metadata, self.out_dir)
