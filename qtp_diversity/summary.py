@@ -120,8 +120,9 @@ def _generate_alpha_vector_summary(files, metadata, out_dir):
            % (alpha_qza, metadata_fp, alpha_qzv))
     std_out, std_err, return_value = system_call(cmd)
     if return_value != 0:
-        error_msg = "Error executing alpha-group-significance for the summary"
-        return False, None, error_msg
+        raise RuntimeError(
+            "Error executing alpha-group-significance for the summary:\n%s"
+            % std_err)
 
     # Extract the Q2 visualization to use it as html_summary
     q2vis = Visualization.load(alpha_qzv)
