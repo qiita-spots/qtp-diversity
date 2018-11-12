@@ -112,7 +112,8 @@ def _generate_alpha_vector_summary(files, metadata, out_dir):
 
     # Generate the metadata file
     metadata = pd.DataFrame.from_dict(metadata, orient='index')
-    metadata.to_csv(metadata_fp, sep='\t')
+    metadata.to_csv(metadata_fp, index_label='#SampleID', na_rep='', sep='\t',
+                    encoding='utf-8')
 
     # Execute alpha group significance
     cmd = ('qiime diversity alpha-group-significance --i-alpha-diversity %s '
