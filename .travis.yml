@@ -30,7 +30,7 @@ install:
   - rm qiime2-2019.1-py36-linux-conda.yml
   - source activate qtp-diversity
   - pip install pip==18.1
-  - pip install https://github.com/qiita-spots/qiita_client/archive/master.zip
+  - pip install https://github.com/antgonza/qiita_client/archive/warnings-onsleep.zip
   - pip install coveralls flake8
   - travis_retry pip install . --process-dependency-links
   - configure_diversity_types --env-script "source activate qtp-diversity" --server-cert $QIITA_SERVER_CERT
