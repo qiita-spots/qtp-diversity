@@ -38,10 +38,11 @@ install:
 before_script:
   - source activate qiita
   - qiita plugins update
-  - qiita pet webserver --no-build-docs start &
+  - supervisord -c ${PWD}/qiita-dev/qiita_pet/supervisor_example.conf
+  - sleep 10 # give enough time to the webserver to start
+  - cat /tmp/supervisord.log
 script:
   - source activate qtp-diversity
-  - sleep 5 # give enough time to the webserver to start
   - start_diversity_types "https://localhost:8383" register ignored
   - nosetests --with-doctest --with-coverage -v --cover-package=qtp_diversity
   - flake8 qtp_diversity setup.py scripts
