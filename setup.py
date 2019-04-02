@@ -10,7 +10,7 @@
 from setuptools import setup
 from glob import glob
 
-__version__ = "0.1.0-dev"
+__version__ = "0.1.1"
 
 classes = """
     Development Status :: 3 - Alpha
@@ -41,8 +41,7 @@ setup(name='qtp_diversity',
       test_suite='nose.collector',
       packages=['qtp_diversity'],
       scripts=glob('scripts/*'),
-      extras_require={'test': ["nose >= 0.10.1", "pep8"]},
-      install_requires=['qiita_client', 'click >= 3.3', 'scikit-bio',
-                        'pandas', 'numpy', 'emperor'],
+      install_requires=['qiita_client', 'click', 'scikit-bio', 'pandas',
+                        'numpy', 'emperor'],
       classifiers=classifiers
       )
