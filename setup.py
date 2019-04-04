@@ -41,8 +41,8 @@ setup(name='qtp_diversity',
       test_suite='nose.collector',
       packages=['qtp_diversity'],
       scripts=glob('scripts/*'),
-      install_requires=['qiita_client', 'click', 'scikit-bio', 'pandas',
-                        'numpy', 'emperor', 'qiita-files @ https://github.com/'
+      install_requires=['click', 'scikit-bio', 'pandas', 'numpy', 'emperor',
+                        'qiita-files @ https://github.com/'
                         'qiita-spots/qiita-files/archive/master.zip',
                         'qiita_client @ https://github.com/qiita-spots/'
                         'qiita_client/archive/master.zip'],
