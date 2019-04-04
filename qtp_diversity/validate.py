@@ -19,6 +19,9 @@ def _validate_distance_matrix(files, metadata, out_dir):
     # Magic number [0] -> there is only one plain text file which is
     # the distance matrix
     dm_fp = files['plain_text'][0]
+    dm_qza = None
+    if 'qza' in files:
+        dm_qza = files['qza'][0]
     dm = DistanceMatrix.read(dm_fp)
 
     # Get the ids of the distance matrix and the metadata
@@ -30,6 +33,8 @@ def _validate_distance_matrix(files, metadata, out_dir):
                              "present in the metadata")
 
     filepaths = [(dm_fp, 'plain_text')]
+    if dm_qza is not None:
+        filepaths.append((dm_qza, 'qza'))
 
     return True, [ArtifactInfo(None, 'distance_matrix', filepaths)], ""
 
@@ -38,6 +43,9 @@ def _validate_ordination_results(files, metadata, out_dir):
     # Magic number [0] -> there is only one plain text file, which is the
     # ordination results
     ord_res_fp = files['plain_text'][0]
+    ord_res_qza = None
+    if 'qza' in files:
+        ord_res_qza = files['qza'][0]
     ord_res = OrdinationResults.read(ord_res_fp)
 
     # Get the ids of the ordination results and the metadata
@@ -49,6 +57,8 @@ def _validate_ordination_results(files, metadata, out_dir):
                              "present in the metadata")
 
     filepaths = [(ord_res_fp, 'plain_text')]
+    if ord_res_qza is not None:
+        filepaths.append((ord_res_qza, 'qza'))
 
     return True, [ArtifactInfo(None, 'ordination_results', filepaths)], ""
 
@@ -57,6 +67,9 @@ def _validate_alpha_vector(files, metadata, out_dir):
     # Magic number [0] -> there is only one plain text file, which is the
     # ordination results
     alpha_vector = files['plain_text'][0]
+    alpha_qza = None
+    if 'qza' in files:
+        alpha_qza = files['qza'][0]
 
     # Parse the sample ids from the alphe_vector file
     alpha_ids = []
@@ -77,6 +90,8 @@ def _validate_alpha_vector(files, metadata, out_dir):
                              "in the metadata")
 
     filepaths = [(alpha_vector, 'plain_text')]
+    if alpha_qza is not None:
+        filepaths.append((alpha_qza, 'qza'))
 
     return True, [ArtifactInfo(None, 'alpha_vector', filepaths)], ""
 

@@ -15,15 +15,17 @@ from .summary import generate_html_summary
 artifact_types = [
     QiitaArtifactType('distance_matrix',
                       'Distance matrix holding pairwise distance between '
-                      'samples', False, False, False, [('plain_text', True)]),
+                      'samples', False, False, False, [('plain_text', True),
+                                                       ('qza', False)]),
     QiitaArtifactType('ordination_results',
                       'Ordination results', False, False, False,
-                      [('plain_text', True)]),
+                      [('plain_text', True), ('qza', False)]),
     QiitaArtifactType('alpha_vector', 'Alpha Diversity per sample results',
-                      False, False, False, [('plain_text', True)])]
+                      False, False, False, [('plain_text', True),
+                                            ('qza', False)])]
 
 # Initialize the plugin
-plugin = QiitaTypePlugin('Diversity types', '0.1.0',
+plugin = QiitaTypePlugin('Diversity types', '0.1.1',
                          'Diversity artifacts type plugin',
                          validate, generate_html_summary,
                          artifact_types)

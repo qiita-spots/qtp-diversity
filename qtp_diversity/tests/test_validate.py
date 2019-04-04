@@ -37,7 +37,7 @@ class ValidateTests(PluginTestCase):
             '1.SKM9.640192': {'col': "doesn't really matters"},
             '1.SKB7.640196': {'col': "doesn't really matters"}}
 
-        plugin('https://localhost:21174', 'register', 'ignored')
+        plugin('https://localhost:8383', 'register', 'ignored')
 
     def tearDown(self):
         for fp in self._clean_up_files:
@@ -92,7 +92,7 @@ class ValidateTests(PluginTestCase):
                       'files': dumps(files),
                       'artifact_type': a_type,
                       'analysis': analysis}
-        data = {'command': dumps(['Diversity types', '0.1.0', 'Validate']),
+        data = {'command': dumps(['Diversity types', '0.1.1', 'Validate']),
                 'parameters': dumps(parameters),
                 'status': 'running'}
         job_id = self.qclient.post(

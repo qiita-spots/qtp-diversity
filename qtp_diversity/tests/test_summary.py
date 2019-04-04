@@ -36,7 +36,7 @@ class SummaryTests(PluginTestCase):
             '1.SKM9.640192': {'col': "group2"},
             '1.SKB7.640196': {'col': "group2"}}
 
-        plugin('https://localhost:21174', 'register', 'ignored')
+        plugin('https://localhost:8383', 'register', 'ignored')
 
     def tearDown(self):
         for fp in self._clean_up_files:
@@ -138,7 +138,7 @@ class SummaryTests(PluginTestCase):
                 'name': "A name", 'analysis': 1, 'data_type': '16S'}
         aid = self.qclient.post('/apitest/artifact/', data=data)['artifact']
         parameters = {'input_data': aid}
-        data = {'command': dumps(['Diversity types', '0.1.0',
+        data = {'command': dumps(['Diversity types', '0.1.1',
                                   'Generate HTML summary']),
                 'parameters': dumps(parameters),
                 'status': 'running'}
