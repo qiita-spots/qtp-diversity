@@ -22,7 +22,10 @@ artifact_types = [
                       [('plain_text', True), ('qza', False)]),
     QiitaArtifactType('alpha_vector', 'Alpha Diversity per sample results',
                       False, False, False, [('plain_text', True),
-                                            ('qza', False)])]
+                                            ('qza', False)]),
+    QiitaArtifactType('FeatureData[Taxonomy]', 'Taxonomy assignments', False,
+                      False, False, [('plain_text', True), ('qza', False)])
+]
 
 # Initialize the plugin
 plugin = QiitaTypePlugin('Diversity types', '0.1.1',

@@ -96,6 +96,27 @@ def _validate_alpha_vector(files, metadata, out_dir):
     return True, [ArtifactInfo(None, 'alpha_vector', filepaths)], ""
 
 
+def _validate_feature_data_taxonomy(files, out_dir):
+    # Magic number [0] -> there is only one plain text file, which is the
+    # ordination results
+    fdt = files['plain_text'][0]
+    fdt_qza = None
+    if 'qza' in files:
+        fdt_qza = files['qza'][0]
+
+    # basic header check to verify that it looks like a taxonomy file
+    with open(fdt) as f:
+        line = f.readline()
+        if 'Tax' not in line or 'ID' not in line:
+            return (False, None, 'The file header seems wrong "%s"' % line)
+
+    filepaths = [(fdt, 'plain_text')]
+    if fdt_qza is not None:
+        filepaths.append((fdt_qza, 'qza'))
+
+    return True, [ArtifactInfo(None, 'FeatureData[Taxonomy]', filepaths)], ""
+
+
 def validate(qclient, job_id, parameters, out_dir):
     """Validates and fix a new artifact
 
@@ -124,7 +145,8 @@ def validate(qclient, job_id, parameters, out_dir):
 
     validators = {'distance_matrix': _validate_distance_matrix,
                   'ordination_results': _validate_ordination_results,
-                  'alpha_vector': _validate_alpha_vector}
+                  'alpha_vector': _validate_alpha_vector,
+                  'FeatureData[Taxonomy]': _validate_feature_data_taxonomy}
 
     # Check if the validate is of a type that we support
     if a_type not in validators:

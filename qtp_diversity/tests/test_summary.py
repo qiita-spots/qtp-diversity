@@ -22,7 +22,8 @@ from skbio import DistanceMatrix, OrdinationResults
 from qtp_diversity import plugin
 from qtp_diversity.summary import (
     _generate_distance_matrix_summary, _generate_ordination_results_summary,
-    _generate_alpha_vector_summary, generate_html_summary)
+    _generate_alpha_vector_summary, _generate_feature_data_taxonomy,
+    generate_html_summary)
 
 
 class SummaryTests(PluginTestCase):
@@ -158,7 +159,8 @@ class SummaryTests(PluginTestCase):
             self.qclient, job_id, params, self.out_dir)
         self.assertEqual(
             obs_error, "Unknown artifact type BIOM. Supported types: "
-                       "alpha_vector, distance_matrix, ordination_results")
+                       "FeatureData[Taxonomy], alpha_vector, distance_matrix, "
+                       "ordination_results")
         self.assertFalse(obs_success)
         self.assertIsNone(obs_ainfo)
 
@@ -220,6 +222,40 @@ class SummaryTests(PluginTestCase):
         self.assertIn('html_summary_dir', a_files)
         for key, val in a_files.items():
             self._clean_up_files.extend(val)
+
+    def test_generate_featureData_Taxonomy_summary(self):
+        fd, taxonomy_fp = mkstemp(suffix='.txt', dir=self.out_dir)
+        close(fd)
+        with open(taxonomy_fp, 'w') as f:
+            f.write("Feature ID\tTaxon\tConfidence\n")
+            f.write("TACGGAGGA\tk__Bacteria;p__Bacteroidetes;c__Bacteroidia\t"
+                    "0.9998743\n")
+            f.write("TACGTAGGG\tk__Bacteria;p__Firmicutes;c__Clostridia\t"
+                    "0.9999999\n")
+        obs_fp, obs_dp = _generate_feature_data_taxonomy(
+            {'plain_text': [taxonomy_fp]}, self.out_dir)
+        self.assertEqual(obs_fp, join(self.out_dir, 'index.html'))
+        self.assertEqual(obs_dp, join(self.out_dir, 'support_files'))
+        self.assertTrue(exists(obs_fp))
+        self.assertTrue(exists(obs_dp))
+
+        with open(obs_fp) as f:
+            obs = f.read()
+
+        self.assertIn('<iframe src="./support_files/', obs)
+
+        # testing error
+        fd, taxonomy_fp = mkstemp(suffix='.txt', dir=self.out_dir)
+        close(fd)
+        with open(taxonomy_fp, 'w') as f:
+            f.write("Feature ID\tThis is gonna fail!\tConfidence\n")
+            f.write("TACGGAGGA\tk__Bacteria;p__Bacteroidetes;c__Bacteroidia\t"
+                    "0.9998743\n")
+            f.write("TACGTAGGG\tk__Bacteria;p__Firmicutes;c__Clostridia\t"
+                    "0.9999999\n")
+        with self.assertRaises(RuntimeError):
+            obs_fp, obs_dp = _generate_feature_data_taxonomy(
+                {'plain_text': [taxonomy_fp]}, self.out_dir)
 
 
 EXP_HTML_REGEXP = """<b>Number of samples:</b> 3</br>
