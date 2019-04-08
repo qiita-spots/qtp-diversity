@@ -108,7 +108,7 @@ def _generate_alpha_vector_summary(files, metadata, out_dir):
     std_out, std_err, return_value = system_call(cmd)
     if return_value != 0:
         error_msg = "Error converting the alpha vectors file to Q2 artifact"
-        return False, None, error_msg
+        raise RuntimeError(error_msg)
 
     # Generate the metadata file
     metadata = pd.DataFrame.from_dict(metadata, orient='index')
@@ -139,10 +139,53 @@ def _generate_alpha_vector_summary(files, metadata, out_dir):
     return html_fp, html_dir
 
 
+def _generate_feature_data_taxonomy(files, metadata, out_dir):
+    # Magic number [0] -> there is only one plain text file and it is the
+    # feature data taxonomy
+    fdt_fp = files['plain_text'][0]
+
+    if 'qza' not in files:
+        fdt_qza = join(out_dir, 'taxonomy.qza')
+        # Get the SampleData[AlphaDiversity] qiime2 artifact
+        cmd = ('qiime tools import --input-path %s --output-path %s '
+               '--type "FeatureData[Taxonomy]"'
+               % (fdt_fp, fdt_qza))
+        std_out, std_err, return_value = system_call(cmd)
+        if return_value != 0:
+            error_msg = ("Error converting the taxonomy file to "
+                         "Q2 artifact")
+            raise RuntimeError(error_msg)
+    else:
+        fdt_qza = files['qza'][0]
+
+    # Tabulate taxonomies
+    fdt_qzv = join(out_dir, 'taxonomy.qzv')
+    cmd = ('qiime metadata tabulate --m-input-file %s --o-visualization %s'
+           % (fdt_qza, fdt_qzv))
+    std_out, std_err, return_value = system_call(cmd)
+    if return_value != 0:
+        error_msg = "Error tabulating Q2 artifact"
+        raise RuntimeError(error_msg)
+
+    # Extract the Q2 visualization to use it as html_summary
+    q2vis = Visualization.load(fdt_qzv)
+    html_dir = join(out_dir, 'support_files')
+    html_fp = join(out_dir, 'index.html')
+
+    q2vis.export_data(html_dir)
+    index_paths = q2vis.get_index_paths()
+    index_name = basename(index_paths['html'])
+    with open(html_fp, 'w') as f:
+        f.write(Q2_INDEX % index_name)
+
+    return html_fp, html_dir
+
+
 HTML_SUMMARIZERS = {
     'distance_matrix': _generate_distance_matrix_summary,
     'ordination_results': _generate_ordination_results_summary,
-    'alpha_vector': _generate_alpha_vector_summary
+    'alpha_vector': _generate_alpha_vector_summary,
+    'FeatureData[Taxonomy]': _generate_feature_data_taxonomy
 }
 
 
@@ -189,8 +232,11 @@ def generate_html_summary(qclient, job_id, parameters, out_dir):
     else:
         return (False, None, "Missing metadata information")
 
-    html_fp, html_dir = HTML_SUMMARIZERS[atype](artifact_info['files'],
-                                                metadata, out_dir)
+    try:
+        html_fp, html_dir = HTML_SUMMARIZERS[atype](
+            artifact_info['files'], metadata, out_dir)
+    except Exception as e:
+        return False, None, str(e)
 
     if html_dir:
         patch_val = dumps({'html': html_fp, 'dir': html_dir})
