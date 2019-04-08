@@ -274,7 +274,7 @@ class ValidateTests(PluginTestCase):
 
         # Test success
         obs_success, obs_ainfo, obs_error = _validate_feature_data_taxonomy(
-            {'plain_text': [taxonomy_fp]}, self.out_dir)
+            {'plain_text': [taxonomy_fp]}, None, self.out_dir)
         self.assertEqual(obs_error, "")
         self.assertTrue(obs_success)
         exp_ainfo = [ArtifactInfo(None, "FeatureData[Taxonomy]",
@@ -291,7 +291,7 @@ class ValidateTests(PluginTestCase):
             f.write("TACGTAGGG\tk__Bacteria;p__Firmicutes;c__Clostridia\t"
                     "0.9999999\n")
         obs_success, obs_ainfo, obs_error = _validate_feature_data_taxonomy(
-            {'plain_text': [taxonomy_fp]}, self.out_dir)
+            {'plain_text': [taxonomy_fp]}, None, self.out_dir)
         self.assertIn("The file header seems wrong", obs_error)
         self.assertFalse(obs_success)
         self.assertIsNone(obs_ainfo)

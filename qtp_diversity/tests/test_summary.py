@@ -233,7 +233,7 @@ class SummaryTests(PluginTestCase):
             f.write("TACGTAGGG\tk__Bacteria;p__Firmicutes;c__Clostridia\t"
                     "0.9999999\n")
         obs_fp, obs_dp = _generate_feature_data_taxonomy(
-            {'plain_text': [taxonomy_fp]}, self.out_dir)
+            {'plain_text': [taxonomy_fp]}, None, self.out_dir)
         self.assertEqual(obs_fp, join(self.out_dir, 'index.html'))
         self.assertEqual(obs_dp, join(self.out_dir, 'support_files'))
         self.assertTrue(exists(obs_fp))
@@ -255,7 +255,7 @@ class SummaryTests(PluginTestCase):
                     "0.9999999\n")
         with self.assertRaises(RuntimeError):
             obs_fp, obs_dp = _generate_feature_data_taxonomy(
-                {'plain_text': [taxonomy_fp]}, self.out_dir)
+                {'plain_text': [taxonomy_fp]}, None, self.out_dir)
 
 
 EXP_HTML_REGEXP = """<b>Number of samples:</b> 3</br>

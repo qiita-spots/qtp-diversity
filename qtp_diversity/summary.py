@@ -139,7 +139,7 @@ def _generate_alpha_vector_summary(files, metadata, out_dir):
     return html_fp, html_dir
 
 
-def _generate_feature_data_taxonomy(files, out_dir):
+def _generate_feature_data_taxonomy(files, metadata, out_dir):
     # Magic number [0] -> there is only one plain text file and it is the
     # feature data taxonomy
     fdt_fp = files['plain_text'][0]

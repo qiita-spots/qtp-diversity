@@ -96,7 +96,7 @@ def _validate_alpha_vector(files, metadata, out_dir):
     return True, [ArtifactInfo(None, 'alpha_vector', filepaths)], ""
 
 
-def _validate_feature_data_taxonomy(files, out_dir):
+def _validate_feature_data_taxonomy(files, metadata, out_dir):
     # Magic number [0] -> there is only one plain text file, which is the
     # ordination results
     fdt = files['plain_text'][0]
