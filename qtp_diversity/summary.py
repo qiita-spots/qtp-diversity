@@ -139,9 +139,9 @@ def _generate_alpha_vector_summary(files, metadata, out_dir):
     return html_fp, html_dir
 
 
-def _generate_feature_data_taxonomy(files, metadata, out_dir):
+def _generate_feature_data(files, metadata, out_dir):
     # Magic number [0] -> there is only one plain text file and it is the
-    # feature data taxonomy
+    # feature data
     fdt_fp = files['plain_text'][0]
 
     if 'qza' not in files:
@@ -152,14 +152,12 @@ def _generate_feature_data_taxonomy(files, metadata, out_dir):
                % (fdt_fp, fdt_qza))
         std_out, std_err, return_value = system_call(cmd)
         if return_value != 0:
-            error_msg = ("Error converting the taxonomy file to "
-                         "Q2 artifact")
+            error_msg = ("Error converting the file to Q2 artifact")
             raise RuntimeError(error_msg)
     else:
         fdt_qza = files['qza'][0]
 
-    # Tabulate taxonomies
-    fdt_qzv = join(out_dir, 'taxonomy.qzv')
+    fdt_qzv = join(out_dir, 'feature-data.qzv')
     cmd = ('qiime metadata tabulate --m-input-file %s --o-visualization %s'
            % (fdt_qza, fdt_qzv))
     std_out, std_err, return_value = system_call(cmd)
@@ -185,7 +183,7 @@ HTML_SUMMARIZERS = {
     'distance_matrix': _generate_distance_matrix_summary,
     'ordination_results': _generate_ordination_results_summary,
     'alpha_vector': _generate_alpha_vector_summary,
-    'FeatureData[Taxonomy]': _generate_feature_data_taxonomy
+    'FeatureData': _generate_feature_data
 }
 
 
