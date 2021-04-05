@@ -23,7 +23,7 @@ import numpy as np
 from qtp_diversity import plugin
 from qtp_diversity.validate import (
     _validate_distance_matrix, _validate_ordination_results,
-    _validate_alpha_vector, _validate_feature_data_taxonomy, validate)
+    _validate_alpha_vector, _validate_feature_data, validate)
 
 
 class ValidateTests(PluginTestCase):
@@ -92,7 +92,7 @@ class ValidateTests(PluginTestCase):
                       'files': dumps(files),
                       'artifact_type': a_type,
                       'analysis': analysis}
-        data = {'command': dumps(['Diversity types', '0.1.1', 'Validate']),
+        data = {'command': dumps(['Diversity types', '2021.05', 'Validate']),
                 'parameters': dumps(parameters),
                 'status': 'running'}
         job_id = self.qclient.post(
@@ -198,7 +198,7 @@ class ValidateTests(PluginTestCase):
         self.assertIsNone(obs_ainfo)
         self.assertEqual(
             obs_error, "Unknown artifact type NotAType. Supported types: "
-                       "FeatureData[Taxonomy], alpha_vector, distance_matrix, "
+                       "FeatureData, alpha_vector, distance_matrix, "
                        "ordination_results")
 
         # Test missing metadata error - to be fair, I don't know how this error
@@ -261,11 +261,11 @@ class ValidateTests(PluginTestCase):
         self.assertEqual(obs_ainfo, exp_ainfo)
         self.assertEqual(obs_error, "")
 
-    def test_validate_FeatureData_Taxonomy(self):
+    def test_validate_FeatureData(self):
         # Create the feature data
-        fd, taxonomy_fp = mkstemp(suffix='.txt', dir=self.out_dir)
+        fd, fd_fp = mkstemp(suffix='.txt', dir=self.out_dir)
         close(fd)
-        with open(taxonomy_fp, 'w') as f:
+        with open(fd_fp, 'w') as f:
             f.write("Feature ID\tTaxonomy\tConfidence\n")
             f.write("TACGGAGGA\tk__Bacteria;p__Bacteroidetes;c__Bacteroidia\t"
                     "0.9998743\n")
@@ -273,25 +273,25 @@ class ValidateTests(PluginTestCase):
                     "0.9999999\n")
 
         # Test success
-        obs_success, obs_ainfo, obs_error = _validate_feature_data_taxonomy(
-            {'plain_text': [taxonomy_fp]}, None, self.out_dir)
+        obs_success, obs_ainfo, obs_error = _validate_feature_data(
+            {'plain_text': [fd_fp]}, None, self.out_dir)
         self.assertEqual(obs_error, "")
         self.assertTrue(obs_success)
-        exp_ainfo = [ArtifactInfo(None, "FeatureData[Taxonomy]",
-                     [(taxonomy_fp, 'plain_text')])]
+        exp_ainfo = [ArtifactInfo(None, "FeatureData",
+                     [(fd_fp, 'plain_text')])]
         self.assertEqual(obs_ainfo, exp_ainfo)
 
         # Test failure wrong format
-        fd, taxonomy_fp = mkstemp(suffix='.txt', dir=self.out_dir)
+        fd, fd_fp = mkstemp(suffix='.txt', dir=self.out_dir)
         close(fd)
-        with open(taxonomy_fp, 'w') as f:
+        with open(fd_fp, 'w') as f:
             f.write("Feature ID\tIt's gonna fail!\tConfidence\n")
             f.write("TACGGAGGA\tk__Bacteria;p__Bacteroidetes;c__Bacteroidia\t"
                     "0.9998743\n")
             f.write("TACGTAGGG\tk__Bacteria;p__Firmicutes;c__Clostridia\t"
                     "0.9999999\n")
-        obs_success, obs_ainfo, obs_error = _validate_feature_data_taxonomy(
-            {'plain_text': [taxonomy_fp]}, None, self.out_dir)
+        obs_success, obs_ainfo, obs_error = _validate_feature_data(
+            {'plain_text': [fd_fp]}, None, self.out_dir)
         self.assertIn("The file header seems wrong", obs_error)
         self.assertFalse(obs_success)
         self.assertIsNone(obs_ainfo)
