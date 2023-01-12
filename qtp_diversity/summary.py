@@ -208,6 +208,9 @@ def generate_html_summary(qclient, job_id, parameters, out_dir):
         Ignored
         The error message, if not successful
     """
+    # we are going to use the "raw" code for retrieving artifact_info vs. the
+    # qiita_client.artifact_and_preparation_files method because this works
+    # with QIIME 2 artifacts and they _cannot_ be per_sample.
     artifact_id = parameters['input_data']
     qclient_url = "/qiita_db/artifacts/%s/" % artifact_id
     artifact_info = qclient.get(qclient_url)
@@ -230,9 +233,10 @@ def generate_html_summary(qclient, job_id, parameters, out_dir):
     else:
         return (False, None, "Missing metadata information")
 
+    files = {k: [vv['filepath'] for vv in v]
+             for k, v in artifact_info['files'].items()}
     try:
-        html_fp, html_dir = HTML_SUMMARIZERS[atype](
-            artifact_info['files'], metadata, out_dir)
+        html_fp, html_dir = HTML_SUMMARIZERS[atype](files, metadata, out_dir)
     except Exception as e:
         return False, None, str(e)
 
