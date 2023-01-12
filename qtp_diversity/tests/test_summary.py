@@ -170,7 +170,7 @@ class SummaryTests(PluginTestCase):
             'distance_matrix', [(fp, 'plain_text')])
         a_files = self.qclient.get(
             "/qiita_db/artifacts/%s/" % params['input_data'])['files']
-        a_files = {k: [b['filepaths'] for b in v] for k, v in a_files.items()}
+        a_files = {k: [b['filepath'] for b in v] for k, v in a_files.items()}
         self.assertNotIn('html_summary', a_files)
         self.assertNotIn('html_summary_dir', a_files)
         obs_success, obs_ainfo, obs_error = generate_html_summary(
@@ -180,7 +180,7 @@ class SummaryTests(PluginTestCase):
         self.assertIsNone(obs_ainfo)
         a_files = self.qclient.get(
             "/qiita_db/artifacts/%s/" % params['input_data'])['files']
-        a_files = {k: [b['filepaths'] for b in v] for k, v in a_files.items()}
+        a_files = {k: [b['filepath'] for b in v] for k, v in a_files.items()}
         self.assertIn('html_summary', a_files)
         self.assertNotIn('html_summary_dir', a_files)
         for key, val in a_files.items():
@@ -192,7 +192,7 @@ class SummaryTests(PluginTestCase):
             'ordination_results', [(fp, 'plain_text')])
         a_files = self.qclient.get(
             "/qiita_db/artifacts/%s/" % params['input_data'])['files']
-        a_files = {k: [b['filepaths'] for b in v] for k, v in a_files.items()}
+        a_files = {k: [b['filepath'] for b in v] for k, v in a_files.items()}
         self.assertNotIn('html_summary', a_files)
         self.assertNotIn('html_summary_dir', a_files)
         obs_success, obs_ainfo, obs_error = generate_html_summary(
@@ -202,7 +202,7 @@ class SummaryTests(PluginTestCase):
         self.assertIsNone(obs_ainfo)
         a_files = self.qclient.get(
             "/qiita_db/artifacts/%s/" % params['input_data'])['files']
-        a_files = {k: [b['filepaths'] for b in v] for k, v in a_files.items()}
+        a_files = {k: [b['filepath'] for b in v] for k, v in a_files.items()}
         self.assertIn('html_summary', a_files)
         self.assertIn('html_summary_dir', a_files)
         for key, val in a_files.items():
@@ -213,7 +213,7 @@ class SummaryTests(PluginTestCase):
         job_id, params = self._create_job('alpha_vector', [(fp, 'plain_text')])
         a_files = self.qclient.get(
             "/qiita_db/artifacts/%s/" % params['input_data'])['files']
-        a_files = {k: [b['filepaths'] for b in v] for k, v in a_files.items()}
+        a_files = {k: [b['filepath'] for b in v] for k, v in a_files.items()}
         self.assertNotIn('html_summary', a_files)
         self.assertNotIn('html_summary_dir', a_files)
         obs_success, obs_ainfo, obs_error = generate_html_summary(
@@ -223,7 +223,7 @@ class SummaryTests(PluginTestCase):
         self.assertIsNone(obs_ainfo)
         a_files = self.qclient.get(
             "/qiita_db/artifacts/%s/" % params['input_data'])['files']
-        a_files = {k: [b['filepaths'] for b in v] for k, v in a_files.items()}
+        a_files = {k: [b['filepath'] for b in v] for k, v in a_files.items()}
         self.assertIn('html_summary', a_files)
         self.assertIn('html_summary_dir', a_files)
         for key, val in a_files.items():

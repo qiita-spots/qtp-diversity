@@ -233,7 +233,7 @@ def generate_html_summary(qclient, job_id, parameters, out_dir):
     else:
         return (False, None, "Missing metadata information")
 
-    files = {k: [vv['filepaths'] for vv in v]
+    files = {k: [vv['filepath'] for vv in v]
              for k, v in artifact_info['files'].items()}
     try:
         html_fp, html_dir = HTML_SUMMARIZERS[atype](files, metadata, out_dir)
