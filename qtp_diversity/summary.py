@@ -179,11 +179,41 @@ def _generate_feature_data(files, metadata, out_dir):
     return html_fp, html_dir
 
 
+def _generate_sample_data_summary(files, metadata, out_dir):
+    # Magic number [0] -> there is only one plain text file and it is the
+    # feature data
+    if 'qza' not in files or not files['qza']:
+        raise RuntimeError('The artifact is missing a QZA file')
+    fdt_qza = files['qza'][0]
+
+    fdt_qzv = join(out_dir, 'sample-data.qzv')
+    cmd = ('qiime metadata tabulate --m-input-file %s --o-visualization %s'
+           % (fdt_qza, fdt_qzv))
+    std_out, std_err, return_value = system_call(cmd)
+    if return_value != 0:
+        error_msg = f"Error tabulating Q2 artifact: {std_err}"
+        raise RuntimeError(error_msg)
+
+    # Extract the Q2 visualization to use it as html_summary
+    q2vis = Visualization.load(fdt_qzv)
+    html_dir = join(out_dir, 'support_files')
+    html_fp = join(out_dir, 'index.html')
+
+    q2vis.export_data(html_dir)
+    index_paths = q2vis.get_index_paths()
+    index_name = basename(index_paths['html'])
+    with open(html_fp, 'w') as f:
+        f.write(Q2_INDEX % index_name)
+
+    return html_fp, html_dir
+
+
 HTML_SUMMARIZERS = {
     'distance_matrix': _generate_distance_matrix_summary,
     'ordination_results': _generate_ordination_results_summary,
     'alpha_vector': _generate_alpha_vector_summary,
-    'FeatureData': _generate_feature_data
+    'FeatureData': _generate_feature_data,
+    'SampleData': _generate_sample_data_summary
 }
 
 

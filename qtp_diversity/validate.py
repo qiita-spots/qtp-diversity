@@ -117,6 +117,21 @@ def _validate_feature_data(files, metadata, out_dir):
     return True, [ArtifactInfo(None, 'FeatureData', filepaths)], ""
 
 
+def _validate_sample_data(files, metadata, out_dir):
+    # Magic number [0] -> there is only one plain text file, which is the
+    # ordination results
+    fdt = files['plain_text'][0]
+    if 'qza' not in files or not files['qza']:
+        return False, None, 'The artifact is missing a QZA file'
+    fdt_qza = files['qza'][0]
+
+    filepaths = [(fdt, 'plain_text')]
+    if fdt_qza is not None:
+        filepaths.append((fdt_qza, 'qza'))
+
+    return True, [ArtifactInfo(None, 'SampleData', filepaths)], ""
+
+
 def validate(qclient, job_id, parameters, out_dir):
     """Validates and fix a new artifact
 
@@ -146,7 +161,8 @@ def validate(qclient, job_id, parameters, out_dir):
     validators = {'distance_matrix': _validate_distance_matrix,
                   'ordination_results': _validate_ordination_results,
                   'alpha_vector': _validate_alpha_vector,
-                  'FeatureData': _validate_feature_data}
+                  'FeatureData': _validate_feature_data,
+                  'SampleData': _validate_sample_data}
 
     # Check if the validate is of a type that we support
     if a_type not in validators:

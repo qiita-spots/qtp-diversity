@@ -24,11 +24,13 @@ artifact_types = [
                       False, False, False, [('plain_text', True),
                                             ('qza', False)]),
     QiitaArtifactType('FeatureData', 'Feature data', False,
-                      False, False, [('plain_text', True), ('qza', False)])
+                      False, False, [('plain_text', True), ('qza', False)]),
+    QiitaArtifactType('SampleData', 'Sample data', False,
+                      False, False, [('plain_text', True), ('qza', True)])
 ]
 
 # Initialize the plugin
-plugin = QiitaTypePlugin('Diversity types', '2021.05',
+plugin = QiitaTypePlugin('Diversity types', '2023.02',
                          'Diversity artifacts type plugin',
                          validate, generate_html_summary,
                          artifact_types)
