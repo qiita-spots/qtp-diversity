@@ -23,7 +23,8 @@ import numpy as np
 from qtp_diversity import plugin
 from qtp_diversity.validate import (
     _validate_distance_matrix, _validate_ordination_results,
-    _validate_alpha_vector, _validate_feature_data, validate)
+    _validate_alpha_vector, _validate_feature_data, validate,
+    _validate_sample_data)
 
 
 class ValidateTests(PluginTestCase):
@@ -92,7 +93,7 @@ class ValidateTests(PluginTestCase):
                       'files': dumps(files),
                       'artifact_type': a_type,
                       'analysis': analysis}
-        data = {'command': dumps(['Diversity types', '2021.05', 'Validate']),
+        data = {'command': dumps(['Diversity types', '2023.02', 'Validate']),
                 'parameters': dumps(parameters),
                 'status': 'running'}
         job_id = self.qclient.post(
@@ -188,6 +189,39 @@ class ValidateTests(PluginTestCase):
         self.assertFalse(obs_success)
         self.assertIsNone(obs_ainfo)
 
+    def test_validate_sample_data(self):
+        # create sample data
+        sample_data_fp = join(self.out_dir, 'Mislabeled.txt')
+        with open(sample_data_fp, 'w') as f:
+            text = [
+                'sample_name\tspec\talleged_probability\tMislabeled\t'
+                'corrected_label\tSourceSink\tmin_proportion\tContaminated',
+                '1788.1\tOsse\t0.91\tFalse\t'
+                'Osse\tsource\t0.7818181818181819\tFalse',
+                '1788.2\tBubo\t0.91\tFalse\t'
+                'Bubo\tsource\t0.8775510204081632\tFalse',
+            ]
+            f.write('\n'.join(text))
+        qza_fp = sample_data_fp.replace('.txt', '.qza')
+
+        obs_success, obs_ainfo, obs_error = _validate_sample_data(
+            {'plain_text': [sample_data_fp], 'qza': [qza_fp]},
+            self.metadata, self.out_dir)
+
+        self.assertEqual(obs_error, "")
+        self.assertTrue(obs_success)
+
+        exp_ainfo = [ArtifactInfo(None, "SampleData",
+                     [(sample_data_fp, 'plain_text'), (qza_fp, 'qza')])]
+        self.assertEqual(obs_ainfo, exp_ainfo)
+
+        # Test failure:
+        obs_success, obs_ainfo, obs_error = _validate_sample_data(
+            {'plain_text': [sample_data_fp]}, self.metadata, self.out_dir)
+        self.assertEqual(obs_error, "The artifact is missing a QZA file")
+        self.assertFalse(obs_success)
+        self.assertIsNone(obs_ainfo)
+
     def test_validate(self):
         # Test artifact type error
         job_id, params = self._create_job(
@@ -198,8 +232,8 @@ class ValidateTests(PluginTestCase):
         self.assertIsNone(obs_ainfo)
         self.assertEqual(
             obs_error, "Unknown artifact type NotAType. Supported types: "
-                       "FeatureData, alpha_vector, distance_matrix, "
-                       "ordination_results")
+                       "FeatureData, SampleData, alpha_vector, "
+                       "distance_matrix, ordination_results")
 
         # Test missing metadata error - to be fair, I don't know how this error
         # can happen in the live system, but better be safe than sorry

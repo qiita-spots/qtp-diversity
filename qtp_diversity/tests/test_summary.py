@@ -17,13 +17,14 @@ from json import dumps
 import pandas as pd
 import numpy as np
 from qiita_client.testing import PluginTestCase
+from qiita_client.util import system_call
 from skbio import DistanceMatrix, OrdinationResults
 
 from qtp_diversity import plugin
 from qtp_diversity.summary import (
     _generate_distance_matrix_summary, _generate_ordination_results_summary,
     _generate_alpha_vector_summary, _generate_feature_data,
-    generate_html_summary)
+    generate_html_summary, _generate_sample_data_summary)
 
 
 class SummaryTests(PluginTestCase):
@@ -134,12 +135,44 @@ class SummaryTests(PluginTestCase):
 
         self.assertIn('<iframe src="./support_files/', obs)
 
+    def test_generate_sample_data(self):
+        # create sample data
+        sample_data_fp = join(self.out_dir, 'Mislabeled.txt')
+        with open(sample_data_fp, 'w') as f:
+            text = [
+                'sample_name\tspec\talleged_probability\tMislabeled\t'
+                'corrected_label\tSourceSink\tmin_proportion\tContaminated',
+                '1788.1\tOsse\t0.91\tFalse\t'
+                'Osse\tsource\t0.7818181818181819\tFalse',
+                '1788.2\tBubo\t0.91\tFalse\t'
+                'Bubo\tsource\t0.8775510204081632\tFalse',
+            ]
+            f.write('\n'.join(text))
+
+        qza_fp = sample_data_fp.replace('.txt', '.qza')
+        cmd = (f'qiime tools import --input-path {sample_data_fp} '
+               f'--output-path {qza_fp} --type "SampleData[Mislabeled]"')
+        system_call(cmd)
+        obs_fp, obs_dp = _generate_sample_data_summary(
+            {'plain_text': [sample_data_fp], 'qza': [qza_fp]},
+            self.metadata, self.out_dir)
+
+        self.assertEqual(obs_fp, join(self.out_dir, 'index.html'))
+        self.assertEqual(obs_dp, join(self.out_dir, 'support_files'))
+        self.assertTrue(exists(obs_fp))
+        self.assertTrue(exists(obs_dp))
+
+        with open(obs_fp) as f:
+            obs = f.read()
+
+        self.assertIn('<iframe src="./support_files/', obs)
+
     def _create_job(self, a_type, files):
         data = {'filepaths': dumps(files), 'type': a_type,
                 'name': "A name", 'analysis': 1, 'data_type': '16S'}
         aid = self.qclient.post('/apitest/artifact/', data=data)['artifact']
         parameters = {'input_data': aid}
-        data = {'command': dumps(['Diversity types', '2021.05',
+        data = {'command': dumps(['Diversity types', '2023.02',
                                   'Generate HTML summary']),
                 'parameters': dumps(parameters),
                 'status': 'running'}
@@ -159,8 +192,8 @@ class SummaryTests(PluginTestCase):
             self.qclient, job_id, params, self.out_dir)
         self.assertEqual(
             obs_error, "Unknown artifact type BIOM. Supported types: "
-                       "FeatureData, alpha_vector, distance_matrix, "
-                       "ordination_results")
+                       "FeatureData, SampleData, alpha_vector, "
+                       "distance_matrix, ordination_results")
         self.assertFalse(obs_success)
         self.assertIsNone(obs_ainfo)
 
