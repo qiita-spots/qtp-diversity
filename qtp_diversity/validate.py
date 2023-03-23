@@ -107,7 +107,7 @@ def _validate_feature_data(files, metadata, out_dir):
     # basic header check to verify that it looks like a taxonomy file
     with open(fdt) as f:
         line = f.readline()
-        if 'Tax' not in line or 'ID' not in line:
+        if ('Tax' not in line or 'ID' not in line) and line[0] != '>':
             return (False, None, 'The file header seems wrong "%s"' % line)
 
     filepaths = [(fdt, 'plain_text')]
