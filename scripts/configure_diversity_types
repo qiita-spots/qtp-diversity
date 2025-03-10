@@ -17,7 +17,7 @@ from qtp_diversity import plugin
 @click.option('--env-script', prompt='Environment script',
               default='source activate qtp-diversity')
 @click.option('--ca-cert', prompt='Server certificate', default='None')
-def config(env_script, server_cert):
+def config(env_script, ca_cert):
     """Generates the Qiita configuration files"""
     if server_cert == 'None':
         server_cert = None
